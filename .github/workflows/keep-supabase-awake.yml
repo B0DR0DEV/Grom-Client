@@ -1,0 +1,28 @@
+# Не даёт бесплатному проекту Supabase уснуть: раз в 3 дня делает маленький запрос к базе.
+# (Бесплатные проекты ставятся на паузу после 7 дней без запросов — тогда у всех ломаются вход и чат.)
+# Ключ ниже — публичный anon-ключ, тот же, что встроен в лаунчер. Секретов здесь нет.
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 6 */3 * *'   # в 06:17 UTC каждые 3 дня
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping database
+        env:
+          SUPABASE_URL: https://hfvsqgerfuiovtcfdmbt.supabase.co
+          SUPABASE_ANON_KEY: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhmdnNxZ2VyZnVpb3Z0Y2ZkbWJ0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTEyMTM0NzgsImV4cCI6MjEwNjc4OTQ3OH0.hAULmMeRc1QDZTEPXvWxzQO1JCATDuEY7gTHe5pVPq8
+        run: |
+          code=$(curl -s -o /dev/null -w '%{http_code}' \
+            "$SUPABASE_URL/rest/v1/accounts?select=id&limit=1" \
+            -H "apikey: $SUPABASE_ANON_KEY" -H "Authorization: Bearer $SUPABASE_ANON_KEY")
+          echo "Supabase ответил: $code"
+          if [ "$code" != "200" ]; then
+            echo "::warning::Supabase ответил $code — возможно, проект на паузе. Открой панель Supabase и нажми Resume."
+          fi
