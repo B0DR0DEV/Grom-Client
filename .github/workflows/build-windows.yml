@@ -1,0 +1,41 @@
+# Проверочная сборка: запускается на каждый push и pull request.
+# Готовый установщик можно скачать во вкладке Actions → нужный запуск → Artifacts.
+# Публичные релизы делает release.yml (по тегу v*).
+name: Build check (Windows)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run build -- --publish never
+
+      - name: Upload installer
+        uses: actions/upload-artifact@v4
+        with:
+          name: Grom-Client-Setup-test-build
+          path: release/Grom-Client-Setup-*.exe
+          if-no-files-found: error
+          retention-days: 7

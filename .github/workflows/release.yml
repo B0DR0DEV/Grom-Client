@@ -1,0 +1,74 @@
+# Публичный релиз. Запускается, когда ты пушишь тег вида v1.5.2:
+#   git tag v1.5.2
+#   git push origin v1.5.2
+# Что делает:
+#   1) собирает установщик прямо из кода этого репозитория на серверах GitHub;
+#   2) считает SHA-256 и кладёт его рядом в SHA256SUMS.txt;
+#   3) создаёт аттестацию GitHub — любой может проверить, что .exe собран из этого коммита;
+#   4) публикует GitHub Release с установщиком.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write        # создать релиз
+  id-token: write        # подписать аттестацию
+  attestations: write    # сохранить аттестацию
+
+jobs:
+  release:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Check that tag matches package.json version
+        shell: pwsh
+        run: |
+          $pkg = Get-Content package.json -Raw | ConvertFrom-Json
+          $tag = "${{ github.ref_name }}".TrimStart('v')
+          if ($pkg.version -ne $tag) {
+            Write-Error "Тег v$tag не совпадает с версией в package.json ($($pkg.version)). Поменяй version в package.json или тег."
+            exit 1
+          }
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build Windows installer
+        run: npm run build -- --publish never
+
+      # --- Сюда позже встанет подпись SignPath (см. docs/RELEASING.md) ---
+
+      - name: Compute SHA-256
+        shell: pwsh
+        run: |
+          $files = Get-ChildItem release -Filter 'Grom-Client-Setup-*.exe'
+          $lines = foreach ($f in $files) {
+            $h = (Get-FileHash $f.FullName -Algorithm SHA256).Hash.ToLower()
+            "$h  $($f.Name)"
+          }
+          $lines | Set-Content -Encoding ascii release/SHA256SUMS.txt
+          Get-Content release/SHA256SUMS.txt
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: release/Grom-Client-Setup-*.exe
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: Grom Client ${{ github.ref_name }}
+          generate_release_notes: true
+          files: |
+            release/Grom-Client-Setup-*.exe
+            release/SHA256SUMS.txt

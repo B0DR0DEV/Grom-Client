@@ -1,0 +1,21 @@
+# Зависимости и результаты сборки — в репозиторий не кладём
+node_modules/
+dist/
+release/
+out/
+
+# Локальные настройки и секреты
+.env
+.env.*
+!.env.example
+*.pem
+*.pfx
+*.p12
+
+# Логи и мусор
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

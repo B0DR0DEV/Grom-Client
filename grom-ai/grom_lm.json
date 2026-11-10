@@ -1,0 +1,14 @@
+{
+  "cfg": {
+    "dModel": 256,
+    "nLayers": 4,
+    "nHeads": 4,
+    "dFF": 1024,
+    "maxLen": 160,
+    "dropout": 0.1,
+    "vocabSize": 1880
+  },
+  "vocabSize": 1880,
+  "datasetSize": 163,
+  "timestamp": "2026-10-09T15:11:10.948Z"
+}
