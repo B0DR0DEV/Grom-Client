@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('grom', {
-  version: '1.4.5',
+  version: '1.5.3',
   author: 'B0DR0DEV',
 
   windowControls: {

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from './supabaseClient';
+import { accountApi } from './api';
 import { toast } from './Toast';
 
 interface Inst { name: string; version: string; loader: string; modsCount: number }
@@ -69,7 +70,7 @@ export default function PlayTogether({ config, instances, activeInstance, refres
   };
   useEffect(() => { loadFriends(); const t = setInterval(loadFriends, 20000); return () => clearInterval(t); }, []);
 
-  const clearActivity = async () => { await supabase.from('accounts').update({ activity: null, status: 'online' }).eq('nickname', config.nickname); };
+  const clearActivity = async () => { try { await accountApi.setActivity(null, 'online'); } catch { /* сессия устарела */ } };
 
   const makeCode = async () => {
     if (!exportName) { toast('Выбери сборку'); return; }
@@ -108,8 +109,8 @@ export default function PlayTogether({ config, instances, activeInstance, refres
       const c = await window.grom.share.export(inst.name);
       if (!c.success || !c.code) { toast(c.error || 'Не удалось создать код сборки'); return; }
       const activity: Activity = { server: fmtAddr(r.publicHost, r.publicPort), mc: inst.version, l: inst.loader, code: c.code, instance: inst.name, ts: Date.now(), public: isPublic, invited: invitedList };
-      const { error } = await supabase.from('accounts').update({ activity, status: 'playing' }).eq('nickname', config.nickname);
-      if (error) toast('Не опубликовано: примени SQL-миграцию activity (supabase/migrations)');
+      try { await accountApi.setActivity(activity, 'playing'); }
+      catch (err: any) { toast('Не опубликовано: ' + (err?.message || 'ошибка сервера')); }
     }
   };
   const closeTunnel = async () => { await window.grom.tunnel.stop(); setTunnel({ running: false }); clearActivity(); };

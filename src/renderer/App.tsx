@@ -25,6 +25,7 @@ import BrandIcon from './BrandIcon';
 import PlayTogether from './PlayTogether';
 import Stats from './Stats';
 import { supabase } from './supabaseClient';
+import { hasSession } from './auth';
 
 type Page = 'home' | 'news' | 'addons' | 'modpacks' | 'worlds' | 'messenger' | 'ai' | 'skins' | 'settings' | 'about' | 'together' | 'stats';
 type AddonTab = 'mod' | 'resourcepack' | 'shader';
@@ -121,8 +122,12 @@ export default function App() {
       setInstances(inst);
 
       const savedNickname = localStorage.getItem('grom-login');
-      if (savedNickname) {
-        const accountType = localStorage.getItem('grom-account-type') === 'microsoft' ? 'microsoft' : 'offline';
+      const savedType = localStorage.getItem('grom-account-type') === 'microsoft' ? 'microsoft' : 'offline';
+      // Аккаунт Grom без токена сессии (вход в старой версии) — просим войти заново, иначе чат и профиль не будут работать.
+      if (savedNickname && savedType === 'offline' && !hasSession()) {
+        localStorage.removeItem('grom-login');
+      } else if (savedNickname) {
+        const accountType = savedType;
         setConfigState((prev) => prev ? { ...prev, nickname: savedNickname, accountType } : prev);
         // Keep the renderer's remembered profile and Electron's persisted launch profile in sync.
         // Otherwise an old 'microsoft' config can survive after the UI restores an offline profile.
@@ -239,7 +244,7 @@ export default function App() {
               <span className="profile-trigger-text">{config.nickname}</span>
               <span className="profile-chevron">⌄</span>
             </button>
-            <div className="top-version">v1.4.5</div>
+            <div className="top-version">v1.5.3</div>
           </div>
         </header>
 
@@ -284,7 +289,7 @@ export default function App() {
               <span className="sidebar-account-copy"><strong>{config.nickname || 'Игрок'}</strong><small>{config.accountType === 'microsoft' ? 'Microsoft · Minecraft' : 'Локальный аккаунт'}</small></span>
               <span className="sidebar-account-more">•••</span>
             </button>
-            <div className="sidebar-footnote"><span /> GROM CLIENT <span className="sidebar-footnote-version">v1.4.5</span></div>
+            <div className="sidebar-footnote"><span /> GROM CLIENT <span className="sidebar-footnote-version">v1.5.3</span></div>
           </aside>
 
           <main className={`content launcher-content ${page === 'messenger' ? 'launcher-content-messenger' : ''}`} key={animKey}>
@@ -1620,7 +1625,7 @@ function AboutPage({ config }: { config: GromConfig }) {
   const [adminSessionCode, setAdminSessionCode] = useState('');
   const [checking, setChecking] = useState(false);
   const [publishing, setPublishing] = useState(false);
-  const [version, setVersion] = useState('1.4.5');
+  const [version, setVersion] = useState('1.5.3');
   const [features, setFeatures] = useState('Исправления ошибок и улучшение стабильности');
   const [required, setRequired] = useState(true);
   const [status, setStatus] = useState('');
@@ -1633,7 +1638,7 @@ function AboutPage({ config }: { config: GromConfig }) {
       if (!data?.authorized) { setStatus('Неверный код или админ-панель не настроена.'); return; }
       setAdminStep('panel'); setAdminSessionCode(code); setCode('');
       const current = await fetchLauncherControl();
-      if (current) { setVersion(current.version || '1.4.5'); setFeatures((current.features || []).join('\n')); setRequired(Boolean(current.required)); }
+      if (current) { setVersion(current.version || '1.5.3'); setFeatures((current.features || []).join('\n')); setRequired(Boolean(current.required)); }
     } catch (e: any) { setStatus(e?.message || 'Не удалось проверить код.'); }
     finally { setChecking(false); }
   };
@@ -1658,7 +1663,7 @@ function AboutPage({ config }: { config: GromConfig }) {
         <div className="about-brand-icon-wrap"><BrandIcon iconKey={config.appIcon} theme={config.theme} className="about-logo about-brand-icon" /></div>
       </button>
       <h2>Grom Client</h2>
-      <p>Версия 1.4.5</p>
+      <p>Версия 1.5.3</p>
       <p style={{ marginTop: 20 }}>Создатель: <strong>B0DR0DEV</strong></p>
       <p><a href="https://gromclient.devs.li" onClick={(e) => { e.preventDefault(); void window.grom.openExternal('https://gromclient.devs.li'); }}>Gromclient.devs.li</a></p>
 
@@ -1706,7 +1711,7 @@ function ReleaseGate() {
     const id = window.setInterval(() => { void check(); }, 60_000);
     return () => { alive = false; window.clearInterval(id); };
   }, []);
-  if (!checked || !release?.required || !release?.version || release.version === '1.4.5') return null;
+  if (!checked || !release?.required || !release?.version || release.version === '1.5.3') return null;
   return <div className="grom-release-backdrop" role="alertdialog" aria-modal="true" aria-labelledby="grom-release-title">
     <section className="grom-release-dialog">
       <div className="grom-release-icon">↻</div>

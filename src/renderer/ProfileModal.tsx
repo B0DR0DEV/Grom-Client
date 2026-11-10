@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { logout } from './auth';
 import { supabase } from './supabaseClient';
 import { toast } from './Toast';
+import { accountApi } from './api';
 
 interface ProfileModalProps {
   nickname: string;
@@ -58,8 +59,7 @@ export default function ProfileModal({
       const { error } = await supabase.storage.from('chat-files').upload(fileName, file);
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('chat-files').getPublicUrl(fileName);
-      const { error: updateError } = await supabase.from('accounts').update({ avatar_url: urlData.publicUrl }).eq('nickname', nickname);
-      if (updateError) throw updateError;
+      await accountApi.update({ avatarUrl: urlData.publicUrl });
       setAvatarUrl(urlData.publicUrl);
       toast('Аватар обновлён');
     } catch (err: any) {
@@ -77,8 +77,7 @@ export default function ProfileModal({
     }
     setSaving(true);
     try {
-      const { error } = await supabase.from('accounts').update({ nickname: cleanNick, status }).eq('nickname', nickname);
-      if (error) throw error;
+      await accountApi.update({ nickname: cleanNick, status });
       localStorage.setItem('grom-login', cleanNick);
       if (onNicknameChange && cleanNick !== nickname) onNicknameChange(cleanNick);
       toast('Профиль сохранён');

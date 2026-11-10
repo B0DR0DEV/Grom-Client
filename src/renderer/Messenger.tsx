@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { supabase } from './supabaseClient';
 import { toast } from './Toast';
+import { accountApi, dmApi } from './api';
 
 interface Message {
   id: string;
@@ -24,19 +25,9 @@ interface ChatUser {
   lastMessage?: string;
 }
 
-async function fetchMessagesForChat(nickname: string, activeChat: string): Promise<Message[]> {
-  let query: any;
-  if (activeChat === 'general') {
-    query = supabase.from('direct_messages').select('*')
-      .eq('to_nickname', 'general').order('created_at', { ascending: true });
-  } else {
-    query = supabase.from('direct_messages').select('*')
-      .or(`and(from_nickname.eq.${nickname},to_nickname.eq.${activeChat}),and(from_nickname.eq.${activeChat},to_nickname.eq.${nickname})`)
-      .order('created_at', { ascending: true });
-  }
-  const { data, error } = await query;
-  if (error) throw error;
-  return (data || []) as Message[];
+// Историю отдаёт сервер и только участникам переписки (см. dm_history в миграции 20261110).
+async function fetchMessagesForChat(_nickname: string, activeChat: string): Promise<Message[]> {
+  return (await dmApi.history<Message>(activeChat)) || [];
 }
 
 function mergeMessages(existing: Message[], incoming: Message[]): Message[] {
@@ -78,7 +69,7 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
 
   useEffect(() => {
     (async () => {
-      await supabase.from('accounts').upsert({ nickname, status: 'online' }, { onConflict: 'nickname' });
+      try { await accountApi.touch(); } catch { /* сессия устарела — покажется при отправке */ }
     })();
   }, [nickname]);
 
@@ -95,12 +86,8 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
   };
 
   const loadChats = async () => {
-    const { data } = await supabase
-      .from('direct_messages')
-      .select('*')
-      .or(`from_nickname.eq.${nickname},to_nickname.eq.${nickname}`)
-      .order('created_at', { ascending: false });
-
+    let data: Message[];
+    try { data = await dmApi.conversations<Message>(); } catch { return; }
     if (!data) return;
     const userSet = new Map<string, ChatUser>();
     const allNicks: string[] = [];
@@ -120,7 +107,7 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
     }
 
     if (allNicks.length > 0) {
-      const { data: profiles } = await supabase.from('accounts').select('*').in('nickname', allNicks);
+      const { data: profiles } = await supabase.from('accounts').select('nickname, avatar_url, status').in('nickname', allNicks);
       for (const p of profiles || []) {
         const existing = userSet.get(p.nickname);
         if (existing) {
@@ -245,8 +232,8 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
     if (!searchQuery.trim()) return;
     const { data } = await supabase
       .from('accounts')
-      .select('*')
-      .ilike('nickname', `%${searchQuery}%`)
+      .select('nickname, avatar_url, status')
+      .ilike('nickname', `%${searchQuery.replace(/[%_\\]/g, '')}%`)
       .neq('nickname', nickname)
       .limit(20);
 
@@ -281,8 +268,7 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
       setInput('');
       setEditingMsg(null);
 
-      const { error } = await supabase.from('direct_messages').update({ text: newText, edited: true }).eq('id', msgId);
-      if (error) toast('Ошибка: ' + error.message);
+      try { await dmApi.edit(msgId, newText); } catch (err: any) { toast('Ошибка: ' + err.message); setReloadHistoryKey((n) => n + 1); }
       return;
     }
 
@@ -307,22 +293,19 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
     setInput('');
     setReplyTo(null);
 
-    const { data, error } = await supabase.from('direct_messages').insert({
-      from_nickname: nickname,
-      to_nickname: optimisticMsg.to_nickname,
-      text: optimisticMsg.text,
-      file_url: null,
-      file_name: null,
-      reply_to_id: optimisticMsg.reply_to_id,
-      reply_to_text: optimisticMsg.reply_to_text,
-      reply_to_author: optimisticMsg.reply_to_author,
-    }).select().single();
-
-    if (error) {
-      toast('Ошибка: ' + error.message);
+    try {
+      const data = await dmApi.send<Message>({
+        to: optimisticMsg.to_nickname,
+        text: optimisticMsg.text,
+        replyToId: optimisticMsg.reply_to_id,
+        replyToText: optimisticMsg.reply_to_text,
+        replyToAuthor: optimisticMsg.reply_to_author,
+      });
+      if (data) setMessages((prev) => prev.map((m) => m.id === optimisticId ? { ...data, _optimistic: false } : m));
+      if (activeChat !== 'general') void loadChats();
+    } catch (err: any) {
+      toast('Ошибка: ' + err.message);
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId));
-    } else if (data) {
-      setMessages((prev) => prev.map((m) => m.id === optimisticId ? { ...data, _optimistic: false } : m));
     }
   };
 
@@ -331,9 +314,8 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
     setMessages((prev) => prev.filter((m) => m.id !== msg.id));
     setMenuMsgId(null);
 
-    const { error } = await supabase.from('direct_messages').delete().eq('id', msg.id);
-    if (error) toast('Ошибка удаления: ' + error.message);
-    else toast('Удалено');
+    try { await dmApi.remove(msg.id); toast('Удалено'); }
+    catch (err: any) { toast('Ошибка удаления: ' + err.message); setReloadHistoryKey((n) => n + 1); }
   };
 
   const startEdit = (msg: Message) => {
@@ -350,11 +332,8 @@ export default function Messenger({ nickname, initialChat, onInitialChatHandled,
       const { error } = await supabase.storage.from('chat-files').upload(fileName, file);
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('chat-files').getPublicUrl(fileName);
-      await supabase.from('direct_messages').insert({
-        from_nickname: nickname, to_nickname: activeChat,
-        text: null, file_url: urlData.publicUrl, file_name: file.name,
-        reply_to_id: null, reply_to_text: null, reply_to_author: null,
-      });
+      await dmApi.send<Message>({ to: activeChat, fileUrl: urlData.publicUrl, fileName: file.name });
+      setReloadHistoryKey((n) => n + 1);
     } catch (err: any) { toast('Ошибка: ' + err.message); }
     finally { setUploading(false); }
   };
