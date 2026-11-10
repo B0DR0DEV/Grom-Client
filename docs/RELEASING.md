@@ -10,7 +10,7 @@
    ```bat
    git init
    git add .
-   git commit -m "Grom Client: open source"
+   git commit -m "Grom Client: исходный код"
    git branch -M main
    git remote add origin https://github.com/B0DR0DEV/Grom-Client.git
    git push -u origin main
@@ -31,12 +31,9 @@ SQL-файлы лежат в `supabase/migrations`. Выполняй их в **S
 
 ## Подпись кода (убирает «Неизвестный издатель»)
 
-**SignPath Foundation** бесплатно подписывает open-source проекты.
+Бесплатная подпись от **SignPath Foundation** доступна только проектам с открытой лицензией, одобренной OSI. У Grom Client лицензия «только для просмотра», поэтому этот путь закрыт.
 
-1. Условия: открытый код под OSI-лицензией (у нас MIT), сборка в CI (есть), понятное описание проекта и политики конфиденциальности (README и PRIVACY.md есть).
-2. Подай заявку на сайте SignPath Foundation (раздел для open-source проектов).
-3. После одобрения они дадут organization ID, project slug и токен. Токен положи в **Settings → Secrets → Actions** как `SIGNPATH_API_TOKEN`.
-4. В `release.yml` на месте комментария «Сюда позже встанет подпись SignPath» добавь шаги из их инструкции: загрузить неподписанный `.exe` как artifact и вызвать `signpath/github-action-submit-signing-request`.
+Платные варианты: **Azure Trusted Signing** (недорогая подписка, доступна не во всех странах) или сертификат подписи кода от удостоверяющего центра. Ключ подписи хранится в **Settings → Secrets → Actions**, а шаг подписи ставится в `release.yml` на место комментария «Сюда позже встанет подпись».
 
 Сертификат копит «репутацию» в SmartScreen: первые недели предупреждение может ещё появляться, потом пропадёт.
 

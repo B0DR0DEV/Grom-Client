@@ -1,21 +1,62 @@
-MIT License
+Grom Client — лицензия «Только для просмотра» (Source-Available, View-Only)
 
-Copyright (c) 2026 B0DR0DEV
+Copyright (c) 2026 B0DR0DEV. Все права защищены.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+Исходный код Grom Client опубликован, чтобы любой мог убедиться, что программа безопасна.
+Это НЕ лицензия открытого программного обеспечения.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+1. Что разрешено
+   а) просматривать и изучать исходный код в этом репозитории;
+   б) скачивать и использовать официальные сборки Grom Client, которые публикует автор
+      (сайт https://gromclient.devs.li и раздел Releases этого репозитория), для личной игры;
+   в) сообщать об ошибках и уязвимостях и предлагать исправления через Issues и Pull Requests.
+      Присылая исправление, вы разрешаете автору бесплатно использовать его в Grom Client.
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+2. Что запрещено без письменного разрешения автора
+   а) копировать код или его части в другие программы, лаунчеры, моды и сайты;
+   б) изменять код и распространять изменённые версии;
+   в) собирать из этого кода собственные сборки и распространять их;
+   г) использовать название «Grom Client», логотип, иконки, фоны, графику и другие
+      материалы проекта в других продуктах;
+   д) продавать код или сборки, а также использовать их в коммерческих целях.
+
+3. Форки на GitHub
+   Создание форка средствами GitHub разрешено только в пределах, которые требуют
+   Условия использования GitHub, и только для того, чтобы предложить изменения
+   в этот репозиторий. Форк не даёт права использовать код как-либо ещё.
+
+4. Без гарантий
+   Программа предоставляется «как есть», без каких-либо гарантий. Автор не отвечает
+   за любой ущерб, связанный с использованием программы.
+
+5. Разрешения
+   Чтобы получить разрешение на то, что запрещено в пункте 2, свяжитесь с автором
+   через GitHub: https://github.com/B0DR0DEV
+
+-----------------------------------------------------------------------------------
+
+Grom Client — View-Only Source License
+
+Copyright (c) 2026 B0DR0DEV. All rights reserved.
+
+The source code is published so anyone can verify that the program is safe.
+This is NOT an open-source license.
+
+1. You MAY: view and study the source code in this repository; download and use the
+   official Grom Client builds published by the author for personal play; report bugs
+   and propose fixes via Issues and Pull Requests (by submitting a contribution you
+   grant the author a free right to use it in Grom Client).
+
+2. You MAY NOT, without the author's written permission: copy the code or any part of it
+   into other software, launchers, mods or websites; modify the code or distribute
+   modified versions; build and distribute your own builds; use the "Grom Client" name,
+   logo, icons, backgrounds, artwork or other project assets in other products; sell or
+   otherwise use the code or builds commercially.
+
+3. Forking on GitHub is permitted only to the extent required by the GitHub Terms of
+   Service and only to propose changes to this repository.
+
+4. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND. THE AUTHOR IS NOT
+   LIABLE FOR ANY DAMAGES ARISING FROM ITS USE.
+
+5. For permissions, contact the author via https://github.com/B0DR0DEV

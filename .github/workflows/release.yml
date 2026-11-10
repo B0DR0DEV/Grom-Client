@@ -62,7 +62,7 @@ jobs:
         if: steps.ver.outputs.skip != 'true'
         run: npm run build -- --publish never
 
-      # --- Сюда позже встанет подпись SignPath (см. docs/RELEASING.md) ---
+      # --- Сюда позже встанет подпись (см. docs/RELEASING.md) ---
 
       - name: Compute SHA-256
         if: steps.ver.outputs.skip != 'true'

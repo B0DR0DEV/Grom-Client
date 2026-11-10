@@ -3,7 +3,7 @@
   "version": "1.5.3",
   "description": "Grom Client — Minecraft launcher with Minecraft news and launcher release notes",
   "author": "B0DR0DEV",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "dist/main/main.js",
   "scripts": {
     "dev": "vite",
