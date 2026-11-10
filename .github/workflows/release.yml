@@ -1,19 +1,21 @@
-# Публичный релиз. Запускается, когда ты пушишь тег вида v1.5.2:
-#   git tag v1.5.2
-#   git push origin v1.5.2
+# Публичный релиз. Запускается сам, когда в main меняется "version" в package.json
+# (или вручную: Actions → Release → Run workflow, или пушем тега v1.2.3).
 # Что делает:
-#   1) собирает установщик прямо из кода этого репозитория на серверах GitHub;
+#   1) если релиза с такой версией ещё нет — собирает установщик из кода на серверах GitHub;
 #   2) считает SHA-256 и кладёт его рядом в SHA256SUMS.txt;
 #   3) создаёт аттестацию GitHub — любой может проверить, что .exe собран из этого коммита;
-#   4) публикует GitHub Release с установщиком.
+#   4) создаёт тег vX.Y.Z и публикует GitHub Release с установщиком.
 name: Release
 
 on:
   push:
+    branches: [main]
+    paths: ['package.json', '.github/workflows/release.yml']
     tags: ['v*']
+  workflow_dispatch:
 
 permissions:
-  contents: write        # создать релиз
+  contents: write        # создать тег и релиз
   id-token: write        # подписать аттестацию
   attestations: write    # сохранить аттестацию
 
@@ -30,25 +32,40 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Check that tag matches package.json version
+      - name: Read version and check if it is already released
+        id: ver
         shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           $pkg = Get-Content package.json -Raw | ConvertFrom-Json
-          $tag = "${{ github.ref_name }}".TrimStart('v')
-          if ($pkg.version -ne $tag) {
-            Write-Error "Тег v$tag не совпадает с версией в package.json ($($pkg.version)). Поменяй version в package.json или тег."
+          $v = $pkg.version
+          "version=$v" >> $env:GITHUB_OUTPUT
+          if ("${{ github.ref_type }}" -eq "tag" -and "${{ github.ref_name }}".TrimStart('v') -ne $v) {
+            Write-Error "Тег ${{ github.ref_name }} не совпадает с версией в package.json ($v)."
             exit 1
           }
+          gh release view "v$v" --repo "${{ github.repository }}" *> $null
+          if ($LASTEXITCODE -eq 0) {
+            Write-Host "Релиз v$v уже есть — пропускаю."
+            "skip=true" >> $env:GITHUB_OUTPUT
+          } else {
+            "skip=false" >> $env:GITHUB_OUTPUT
+          }
+          exit 0
 
       - name: Install dependencies
+        if: steps.ver.outputs.skip != 'true'
         run: npm ci
 
       - name: Build Windows installer
+        if: steps.ver.outputs.skip != 'true'
         run: npm run build -- --publish never
 
       # --- Сюда позже встанет подпись SignPath (см. docs/RELEASING.md) ---
 
       - name: Compute SHA-256
+        if: steps.ver.outputs.skip != 'true'
         shell: pwsh
         run: |
           $files = Get-ChildItem release -Filter 'Grom-Client-Setup-*.exe'
@@ -60,14 +77,19 @@ jobs:
           Get-Content release/SHA256SUMS.txt
 
       - name: Attest build provenance
+        if: steps.ver.outputs.skip != 'true'
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: release/Grom-Client-Setup-*.exe
 
       - name: Publish GitHub Release
+        if: steps.ver.outputs.skip != 'true'
         uses: softprops/action-gh-release@v2
         with:
-          name: Grom Client ${{ github.ref_name }}
+          tag_name: v${{ steps.ver.outputs.version }}
+          target_commitish: ${{ github.sha }}
+          name: Grom Client v${{ steps.ver.outputs.version }}
+          make_latest: true
           generate_release_notes: true
           files: |
             release/Grom-Client-Setup-*.exe
